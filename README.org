@@ -1,0 +1,47 @@
+#+TITLE: org-rich-paste
+
+# [[https://melpa.org/#/org-rich-paste][https://melpa.org/packages/org-rich-paste-badge.svg]]
+
+Do you often yank source code into your org files, manually
+surrounding it in =#+BEGIN_SRC= blocks? This package will give you a
+new way of pasting that automatically surrounds the snippet in blocks,
+marked with the major mode of where the code came from, and adds a
+link to the source file after the block.
+
+#+ATTR_HTML: :alt org-rich-yank demo
+[[file:org-rich-yank.gif][file:org-rich-yank.gif]]
+
+* Installation
+
+# ** MELPA
+# If you use [[https://melpa.org/][MELPA]], you can just do =M-x list-packages=, find
+# =org-rich-paste= in the list and hit =i x=.
+
+# ** Manual
+Just put =org-rich-paste.el= somewhere in =load-path=.
+
+
+* Usage
+
+** Manual, loading on startup:
+
+To use, require and bind whatever keys you prefer to the
+interactive function:
+
+#+BEGIN_SRC emacs-lisp
+(require 'org-rich-yank)
+(define-key org-mode-map (kbd "C-M-y") #'org-rich-yank)
+#+END_SRC
+
+** With use-package, enabled after org:
+
+If you prefer =use-package=, the above settings would be:
+
+#+BEGIN_SRC emacs-lisp
+(use-package org-rich-yank
+  :ensure t
+  :after org
+  :config
+  (define-key org-mode-map (kbd "C-M-y") #'org-rich-yank))
+#+END_SRC
+
