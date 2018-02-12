@@ -1,6 +1,6 @@
-#+TITLE: org-rich-paste
+#+TITLE: org-rich-yank
 
-# [[https://melpa.org/#/org-rich-paste][https://melpa.org/packages/org-rich-paste-badge.svg]]
+# [[https://melpa.org/#/org-rich-yank][https://melpa.org/packages/org-rich-yank-badge.svg]]
 
 Do you often yank source code into your org files, manually
 surrounding it in =#+BEGIN_SRC= blocks? This package will give you a
@@ -15,10 +15,10 @@ link to the source file after the block.
 
 # ** MELPA
 # If you use [[https://melpa.org/][MELPA]], you can just do =M-x list-packages=, find
-# =org-rich-paste= in the list and hit =i x=.
+# =org-rich-yank= in the list and hit =i x=.
 
 # ** Manual
-Just put =org-rich-paste.el= somewhere in =load-path=.
+Just put =org-rich-yank.el= somewhere in =load-path=.
 
 
 * Usage
