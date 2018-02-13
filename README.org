@@ -41,7 +41,7 @@ If you prefer =use-package=, the above settings would be:
 (use-package org-rich-yank
   :ensure t
   :after org
-  :config
-  (define-key org-mode-map (kbd "C-M-y") #'org-rich-yank))
+  :bind (:map org-mode-map
+              ("C-M-y" . org-rich-yank)))
 #+END_SRC
 
