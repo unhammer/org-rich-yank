@@ -1,9 +1,9 @@
 ;;; org-rich-yank.el --- paste with org-mode markup and link to source -*- lexical-binding: t -*-
 
-;; Copyright (C) 2017 Kevin Brubeck Unhammer
+;; Copyright (C) 2018 Kevin Brubeck Unhammer
 
 ;; Author: Kevin Brubeck Unhammer <unhammer@fsfe.org>
-;; Version: 0.1.0
+;; Version: 0.1.1
 ;; Package-Requires: ((emacs "24.4"))
 ;; Keywords: convenience, hypermedia, org
 
