@@ -86,14 +86,16 @@ ARGS ignored."
 (defun org-rich-yank ()
   "Yank, surrounded by #+BEGIN_SRC block with major mode of originating buffer."
   (interactive)
-  (insert
-   (concat
-    (with-current-buffer org-rich-yank--buffer
-      (format "#+BEGIN_SRC %s\n"
-              (replace-regexp-in-string "-mode$" "" (symbol-name major-mode))))
-    (org-rich-yank--trim-nl (current-kill 0))
-    (format "\n#+END_SRC\n")
-    (org-rich-yank--link))))
+  (if org-rich-yank--buffer
+      (insert
+       (concat
+        (with-current-buffer org-rich-yank--buffer
+          (format "#+BEGIN_SRC %s\n"
+                  (replace-regexp-in-string "-mode$" "" (symbol-name major-mode))))
+        (org-rich-yank--trim-nl (current-kill 0))
+        (format "\n#+END_SRC\n")
+        (org-rich-yank--link)))
+    (message "`org-rich-yank' doesn't know the source buffer – please `kill-ring-save' and try again.")))
 
 
 (provide 'org-rich-yank)
