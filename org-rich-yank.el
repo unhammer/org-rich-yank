@@ -67,14 +67,22 @@ ARGS ignored."
 (defun org-rich-yank--store-link ()
   "Store the link using `org-store-link' without erroring out."
   (with-demoted-errors
-      (if (and (eq major-mode 'gnus-article-mode)
-               (fboundp #'gnus-article-show-summary))
-          ;; Workaround for possible bug in org-gnus-store-link: If
-          ;; you've moved point in the summary, org-store-link from
-          ;; the article will give the wrong link
-          (save-window-excursion (gnus-article-show-summary)
-                                 (org-store-link nil))
-        (org-store-link nil))))
+      (cond ((and (eq major-mode 'gnus-article-mode)
+                  (fboundp #'gnus-article-show-summary))
+             ;; Workaround for possible bug in org-gnus-store-link: If
+             ;; you've moved point in the summary, org-store-link from
+             ;; the article will give the wrong link
+             (save-window-excursion (gnus-article-show-summary)
+                                    (org-store-link nil)))
+            ;; org-store-link doesn't do eww-mode yet as of 8.2.10 at least:
+            ((and (eq major-mode 'eww-mode)
+                  (boundp 'eww-data)
+                  (plist-get eww-data :url))
+             (format "[[%s][%s]]"
+                     (plist-get eww-data :url)
+                     (or (plist-get eww-data :title)
+                         (plist-get eww-data :url))))
+            (t (org-store-link nil)))))
 
 (defun org-rich-yank--link ()
   "Get an org-link to the current kill."
