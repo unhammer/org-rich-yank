@@ -67,7 +67,8 @@ ARGS ignored."
 (defun org-rich-yank--store-link ()
   "Store the link using `org-store-link' without erroring out."
   (with-demoted-errors
-      (if (eq major-mode 'gnus-article-mode)
+      (if (and (eq major-mode 'gnus-article-mode)
+               (fboundp #'gnus-article-show-summary))
           ;; Workaround for possible bug in org-gnus-store-link: If
           ;; you've moved point in the summary, org-store-link from
           ;; the article will give the wrong link
