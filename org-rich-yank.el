@@ -55,6 +55,7 @@
 ARGS ignored."
   (setq org-rich-yank--buffer (current-buffer)))
 
+;;;###autoload
 (defun org-rich-yank-enable ()
   "Add the advices that store the buffer of the current kill."
   (advice-add #'kill-append :after #'org-rich-yank--store)
@@ -106,6 +107,7 @@ ARGS ignored."
       ;; they're in the same projectile-project
       (when link (concat link "\n")))))
 
+;;;###autoload
 (defun org-rich-yank ()
   "Yank, surrounded by #+BEGIN_SRC block with major mode of originating buffer."
   (interactive)
