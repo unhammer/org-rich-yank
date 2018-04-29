@@ -40,8 +40,13 @@ If you prefer =use-package=, the above settings would be:
 #+BEGIN_SRC emacs-lisp
 (use-package org-rich-yank
   :ensure t
-  :after org
+  :demand t
   :bind (:map org-mode-map
               ("C-M-y" . org-rich-yank)))
 #+END_SRC
 
+The =:demand t= in there is because we never know when the user will
+hit =C-M-y=, so we always have to store the current buffer on
+kills. You can remove the =:demand t= and have lazy/deferred loading,
+but then the first time you hit =C-M-y= after startup, you'll get a
+message that you have to kill the selection again.
