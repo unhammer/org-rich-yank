@@ -4,6 +4,7 @@
 
 ;; Author: Kevin Brubeck Unhammer <unhammer@fsfe.org>
 ;; Version: 0.2.1
+;; URL: https://github.com/unhammer/org-rich-yank
 ;; Package-Requires: ((emacs "24.4"))
 ;; Keywords: convenience, hypermedia, org
 
@@ -34,7 +35,8 @@
 ;;; interactive functions:
 ;;;
 ;;; (require 'org-rich-yank)
-;;; (define-key org-mode-map (kbd "C-M-y") #'org-rich-yank)
+;;; (eval-after-load 'org
+;;;   '(define-key org-mode-map (kbd "C-M-y") #'org-rich-yank)))
 ;;;
 
 ;;; If you prefer `use-package', the above settings would be:
@@ -42,8 +44,11 @@
 ;;; (use-package org-rich-yank
 ;;;   :ensure t
 ;;;   :config
-;;;   (define-key org-mode-map (kbd "C-M-y") #'org-rich-yank))
-
+;;;   (eval-after-load 'org
+;;;     '(define-key org-mode-map (kbd "C-M-y") #'org-rich-yank)))
+;;;
+;;; Note that we eagerly load `org-rich-yank', so we can capture yanks
+;;; that happen before `org' is loaded.
 
 
 ;;; Code:
