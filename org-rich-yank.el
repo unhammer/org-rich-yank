@@ -138,14 +138,14 @@ ARGS ignored."
   "Yank, surrounded by #+BEGIN_SRC block with major mode of originating buffer."
   (interactive)
   (if org-rich-yank--buffer
-      (let ((paste
-             (concat
-              (with-current-buffer org-rich-yank--buffer
-                (format "#+BEGIN_SRC %s\n"
-                        (replace-regexp-in-string "-mode$" "" (symbol-name major-mode))))
-              (org-rich-yank--trim-nl (current-kill 0))
-              (format "\n#+END_SRC\n")
-              (org-rich-yank--link))))
+      (let* ((source-mode (buffer-local-value 'major-mode org-rich-yank--buffer))
+             (paste
+              (concat
+               (format "#+BEGIN_SRC %s\n"
+                       (replace-regexp-in-string "-mode$" "" (symbol-name source-mode)))
+               (org-rich-yank--trim-nl (current-kill 0))
+               (format "\n#+END_SRC\n")
+               (org-rich-yank--link))))
         (insert
          (if org-rich-yank-add-target-indent
              (org-rich-yank-indent paste)
