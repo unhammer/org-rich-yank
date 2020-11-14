@@ -92,6 +92,9 @@ ARGS ignored."
                             ""
                             str))
 
+(declare-function diff-goto-source "diff-mode")
+(declare-function gnus-article-show-summary "gnus-art")
+
 (defun org-rich-yank--store-link ()
   "Store the link using `org-store-link' without erroring out."
   (with-demoted-errors
