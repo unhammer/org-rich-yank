@@ -1,6 +1,6 @@
-;;; org-rich-yank.el --- paste with org-mode markup and link to source -*- lexical-binding: t -*-
+;;; org-rich-yank.el --- Paste with org-mode markup and link to source -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018 Kevin Brubeck Unhammer
+;; Copyright (C) 2018-2020 Kevin Brubeck Unhammer
 
 ;; Author: Kevin Brubeck Unhammer <unhammer@fsfe.org>
 ;; Version: 0.2.1
