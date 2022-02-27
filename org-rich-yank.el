@@ -97,7 +97,7 @@ ARGS ignored."
 
 (defun org-rich-yank--store-link ()
   "Store the link using `org-store-link' without erroring out."
-  (with-demoted-errors
+  (with-demoted-errors "Error in org-rich-yank--store-link: %S"
       (cond ((and (eq major-mode 'gnus-article-mode)
                   (fboundp #'gnus-article-show-summary))
              ;; Workaround for possible bug in org-gnus-store-link: If
