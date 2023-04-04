@@ -65,6 +65,15 @@ all lines below will also get that indentation."
   :group 'org-rich-yank
   :type 'boolean)
 
+(defcustom org-rich-yank-link-prefix nil
+  "String to prefix link to source location with.
+If this variable is non-nil the string will be used to prefix the
+link to the source location. For example a value of \"#+comment:
+\" will cause the link to be inserted as a comment that will not
+be exported."
+  :group 'org-rich-yank
+  :type 'string)
+
 (defvar org-rich-yank--buffer nil)
 
 (defun org-rich-yank--store (&rest _args)
@@ -148,7 +157,7 @@ ARGS ignored."
                        (replace-regexp-in-string "-mode$" "" (symbol-name source-mode)))
                (org-rich-yank--trim-nl (current-kill 0))
                (format "\n#+END_SRC\n")
-               (org-rich-yank--link))))
+               (concat org-rich-yank-link-prefix ( org-rich-yank--link )))))
         (insert
          (if org-rich-yank-add-target-indent
              (org-rich-yank-indent paste)

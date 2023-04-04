@@ -50,3 +50,22 @@ hit =C-M-y=, so we always have to store the current buffer on
 kills. You can remove the =:demand t= and have lazy/deferred loading,
 but then the first time you hit =C-M-y= after startup, you'll get a
 message that you have to kill the selection again.
+
+** Configuring link prefix
+
+If you want to prefix the link to the source location you can do so by defining =org-rich-yank-link-prefix=. For example, links to local files might be useful in your org document but not so useful in exported content, so you may want to make the link a /comment/ line.
+
+#+begin_src emacs-lisp :tangle no
+  (customize-set-variable 'org-rich-yank-link-prefix "#+comment: ")
+#+end_src
+
+Configuring the variable as above results in the following content being pasted:
+
+#+begin_example
+  ,#+BEGIN_SRC emacs-lisp
+  ;; URL: https://github.com/unhammer/org-rich-yank
+  ;; Package-Requires: ((emacs "24.4"))
+  ;; Keywords: convenience, hypermedia, org
+  ,#+END_SRC
+  ,#+comment: [[file:~/src/org-rich-yank/org-rich-yank.el]]
+#+end_example
