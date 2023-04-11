@@ -50,3 +50,34 @@ hit =C-M-y=, so we always have to store the current buffer on
 kills. You can remove the =:demand t= and have lazy/deferred loading,
 but then the first time you hit =C-M-y= after startup, you'll get a
 message that you have to kill the selection again.
+
+* Configuration
+
+** Changing the link/block format
+
+If you want to change how the source block or link is formatted, you
+can do so by setting =org-rich-yank-format-paste= to a function. For
+example, links to local files might be useful in your org document but
+not so useful in exported content, so you may want to make such a link
+a /comment/ line.
+
+#+begin_src emacs-lisp :tangle no
+  (defun my-org-rich-yank-format-paste (language contents link)
+    "Based on `org-rich-yank--format-paste-default'."
+    (format "#+BEGIN_SRC %s\n%s\n#+END_SRC\n#+comment: %s"
+            language
+            (org-rich-yank--trim-nl contents)
+            link))
+  (customize-set-variable 'org-rich-yank-format-paste #'my-org-rich-yank-format-paste)
+#+end_src
+
+Configuring the variable as above results in the following content being pasted:
+
+#+begin_example
+  ,#+BEGIN_SRC emacs-lisp
+  ;; URL: https://github.com/unhammer/org-rich-yank
+  ;; Package-Requires: ((emacs "24.4"))
+  ;; Keywords: convenience, hypermedia, org
+  ,#+END_SRC
+  ,#+comment: [[file:~/src/org-rich-yank/org-rich-yank.el]]
+#+end_example

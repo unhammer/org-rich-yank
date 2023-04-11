@@ -65,6 +65,12 @@ all lines below will also get that indentation."
   :group 'org-rich-yank
   :type 'boolean)
 
+(defcustom org-rich-yank-format-paste #'org-rich-yank--format-paste-default
+  "A function to format current paste as an org source block.
+See `org-rich-yank--format-paste-default' for example and expected arguments."
+  :group 'org-rich-yank
+  :type 'function)
+
 (defvar org-rich-yank--buffer nil)
 
 (defun org-rich-yank--store (&rest _args)
@@ -136,19 +142,23 @@ ARGS ignored."
                               (concat "\n" indent)
                               paste)))
 
+(defun org-rich-yank--format-paste-default (language contents link)
+  "Format LANGUAGE, CONTENTS and LINK as an `org-mode' source block."
+  (format "#+BEGIN_SRC %s\n%s\n#+END_SRC\n%s"
+          language
+          (org-rich-yank--trim-nl contents)
+          link))
+
 ;;;###autoload
 (defun org-rich-yank ()
   "Yank, surrounded by #+BEGIN_SRC block with major mode of originating buffer."
   (interactive)
   (if org-rich-yank--buffer
       (let* ((source-mode (buffer-local-value 'major-mode org-rich-yank--buffer))
-             (paste
-              (concat
-               (format "#+BEGIN_SRC %s\n"
-                       (replace-regexp-in-string "-mode$" "" (symbol-name source-mode)))
-               (org-rich-yank--trim-nl (current-kill 0))
-               (format "\n#+END_SRC\n")
-               (org-rich-yank--link))))
+             (paste (funcall org-rich-yank-format-paste
+                             (replace-regexp-in-string "-mode$" "" (symbol-name source-mode))
+                             (current-kill 0)
+                             (org-rich-yank--link))))
         (insert
          (if org-rich-yank-add-target-indent
              (org-rich-yank-indent paste)
