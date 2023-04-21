@@ -53,8 +53,10 @@
 
 ;;; Code:
 
+(require 'org)
+
 (defgroup org-rich-yank nil
-  "Options for org-rich-yank"
+  "Options for org-rich-yank."
   :tag "org-rich-yank"
   :group 'org)
 
@@ -155,9 +157,10 @@ ARGS ignored."
   (interactive)
   (if org-rich-yank--buffer
       (let* ((source-mode (buffer-local-value 'major-mode org-rich-yank--buffer))
+             (escaped-kill (org-escape-code-in-string (current-kill 0)))
              (paste (funcall org-rich-yank-format-paste
                              (replace-regexp-in-string "-mode$" "" (symbol-name source-mode))
-                             (current-kill 0)
+                             escaped-kill
                              (org-rich-yank--link))))
         (insert
          (if org-rich-yank-add-target-indent
