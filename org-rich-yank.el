@@ -53,7 +53,8 @@
 
 ;;; Code:
 
-(require 'org)
+(autoload 'org-store-link "ol")
+(autoload 'org-escape-code-in-string "org-src")
 
 (defgroup org-rich-yank nil
   "Options for org-rich-yank."
