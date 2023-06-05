@@ -159,10 +159,15 @@ ARGS ignored."
   (if org-rich-yank--buffer
       (let* ((source-mode (buffer-local-value 'major-mode org-rich-yank--buffer))
              (escaped-kill (org-escape-code-in-string (current-kill 0)))
+             (needs-initial-newline
+              (save-excursion
+                (re-search-backward "\\S " (line-beginning-position) 'noerror)))
              (paste (funcall org-rich-yank-format-paste
                              (replace-regexp-in-string "-mode$" "" (symbol-name source-mode))
                              escaped-kill
                              (org-rich-yank--link))))
+        (when needs-initial-newline
+          (insert "\n"))
         (insert
          (if org-rich-yank-add-target-indent
              (org-rich-yank-indent paste)
