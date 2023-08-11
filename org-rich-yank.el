@@ -5,7 +5,7 @@
 ;; Author: Kevin Brubeck Unhammer <unhammer@fsfe.org>
 ;; Version: 0.2.2
 ;; URL: https://github.com/unhammer/org-rich-yank
-;; Package-Requires: ((emacs "24.4"))
+;; Package-Requires: ((emacs "29.1"))
 ;; Keywords: convenience, hypermedia, org
 
 ;; This file is not part of GNU Emacs.
@@ -138,7 +138,7 @@ ARGS ignored."
 
 (defun org-rich-yank-indent (paste)
   "Prepend current indentation to each line of PASTE."
-  (let* ((s (buffer-substring (line-beginning-position) (point)))
+  (let* ((s (buffer-substring (pos-bol) (point)))
          (indent (progn (string-match "\\s *$" s)
                         (match-string 0 s))))
     (replace-regexp-in-string "\n"
@@ -161,7 +161,7 @@ ARGS ignored."
              (escaped-kill (org-escape-code-in-string (current-kill 0)))
              (needs-initial-newline
               (save-excursion
-                (re-search-backward "\\S " (line-beginning-position) 'noerror)))
+                (re-search-backward "\\S " (pos-bol) 'noerror)))
              (paste (funcall org-rich-yank-format-paste
                              (replace-regexp-in-string "-mode$" "" (symbol-name source-mode))
                              escaped-kill
