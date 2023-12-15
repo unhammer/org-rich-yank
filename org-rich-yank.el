@@ -3,7 +3,7 @@
 ;; Copyright (C) 2018-2023 Kevin Brubeck Unhammer
 
 ;; Author: Kevin Brubeck Unhammer <unhammer@fsfe.org>
-;; Version: 0.2.2
+;; Version: 0.3.0
 ;; URL: https://github.com/unhammer/org-rich-yank
 ;; Package-Requires: ((emacs "24.4"))
 ;; Keywords: convenience, hypermedia, org
@@ -28,8 +28,9 @@
 ;;; Do you often yank source code into your org files, manually
 ;;; surrounding it in #+BEGIN_SRC blocks? This package will give you a
 ;;; new way of pasting that automatically surrounds the snippet in
-;;; blocks, marked with the major mode of where the code came from,
-;;; and adds a link to the source file after the block.
+;;; blocks, marked with the language of the major mode of where the
+;;; code came from, and adds a link to the source file after the
+;;; block.
 
 ;;; To use, require and bind whatever keys you prefer to the
 ;;; interactive functions:
@@ -55,6 +56,10 @@
 
 (autoload 'org-store-link "ol")
 (autoload 'org-escape-code-in-string "org-src")
+(autoload 'org-src--on-datum-p "org-src")
+(autoload 'org-element-at-point "org-element")
+(autoload 'org-element-type "org-element")
+(autoload 'org-element-property "org-element")
 
 (defgroup org-rich-yank nil
   "Options for org-rich-yank."
@@ -74,12 +79,33 @@ See `org-rich-yank--format-paste-default' for example and expected arguments."
   :group 'org-rich-yank
   :type 'function)
 
-(defvar org-rich-yank--buffer nil)
+(defvar org-rich-yank--buffer nil
+  "The buffer of the most recent `kill-ring' text.")
+
+(defvar org-rich-yank--lang nil
+  "Language of the most recent `kill-ring' text.
+Often but not always the language of buffer major mode; see
+`org-rich-yank--get-lang'.")
+
+(defun org-rich-yank--get-lang ()
+  "Find source language of current kill.
+Typically language of buffer major mode, but org source blocks
+should for example use the mode of their block, instead of
+\"org\"."
+  (if-let* ((element (and (eq major-mode 'org-mode)
+                          (org-element-at-point)))
+            (type (and (org-src--on-datum-p element) ; o/w takes effect after #+end_src too
+                       (org-element-type element)))
+            (lang (and (eq type 'src-block)
+                       (org-element-property :language element))))
+      lang
+    (replace-regexp-in-string "-mode$" "" (symbol-name major-mode))))
 
 (defun org-rich-yank--store (&rest _args)
   "Store current buffer in `org-rich-yank--buffer'.
 ARGS ignored."
-  (setq org-rich-yank--buffer (current-buffer)))
+  (setq org-rich-yank--buffer (current-buffer))
+  (setq org-rich-yank--lang (org-rich-yank--get-lang)))
 
 ;;;###autoload
 (defun org-rich-yank-enable ()
@@ -156,14 +182,14 @@ ARGS ignored."
 (defun org-rich-yank ()
   "Yank, surrounded by #+BEGIN_SRC block with major mode of originating buffer."
   (interactive)
-  (if org-rich-yank--buffer
-      (let* ((source-mode (buffer-local-value 'major-mode org-rich-yank--buffer))
-             (escaped-kill (org-escape-code-in-string (current-kill 0)))
+  (if (and org-rich-yank--buffer
+           org-rich-yank--lang)
+      (let* ((escaped-kill (org-escape-code-in-string (current-kill 0)))
              (needs-initial-newline
               (save-excursion
                 (re-search-backward "\\S " (line-beginning-position) 'noerror)))
              (paste (funcall org-rich-yank-format-paste
-                             (replace-regexp-in-string "-mode$" "" (symbol-name source-mode))
+                             org-rich-yank--lang
                              escaped-kill
                              (org-rich-yank--link))))
         (when needs-initial-newline
