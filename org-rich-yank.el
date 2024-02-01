@@ -3,9 +3,9 @@
 ;; Copyright (C) 2018-2023 Kevin Brubeck Unhammer
 
 ;; Author: Kevin Brubeck Unhammer <unhammer@fsfe.org>
-;; Version: 0.3.0
+;; Version: 0.3.1
 ;; URL: https://github.com/unhammer/org-rich-yank
-;; Package-Requires: ((emacs "24.4"))
+;; Package-Requires: ((emacs "25.1"))
 ;; Keywords: convenience, hypermedia, org
 
 ;; This file is not part of GNU Emacs.
@@ -60,6 +60,7 @@
 (autoload 'org-element-at-point "org-element")
 (autoload 'org-element-type "org-element")
 (autoload 'org-element-property "org-element")
+(autoload 'org-download-clipboard "org-download")
 
 (defgroup org-rich-yank nil
   "Options for org-rich-yank."
@@ -78,6 +79,11 @@ all lines below will also get that indentation."
 See `org-rich-yank--format-paste-default' for example and expected arguments."
   :group 'org-rich-yank
   :type 'function)
+
+(defcustom org-rich-yank-download-image t
+  "Whether to use `org-download-clipboard' when clipboard contains image."
+  :group 'org-rich-yank
+  :type 'boolean)
 
 (defvar org-rich-yank--buffer nil
   "The buffer of the most recent `kill-ring' text.")
@@ -178,27 +184,36 @@ ARGS ignored."
           (org-rich-yank--trim-nl contents)
           link))
 
+(defun org-rich-yank--treat-as-image ()
+  "Non-nil if clipboard contents contain image, and `org-download' feature enabled."
+  (and org-rich-yank-download-image
+       (require 'org-download nil 'noerror)
+       (gui-backend-get-selection 'CLIPBOARD 'image/png)))
+
 ;;;###autoload
 (defun org-rich-yank ()
   "Yank, surrounded by #+BEGIN_SRC block with major mode of originating buffer."
   (interactive)
-  (if (and org-rich-yank--buffer
-           org-rich-yank--lang)
-      (let* ((escaped-kill (org-escape-code-in-string (current-kill 0)))
-             (needs-initial-newline
-              (save-excursion
-                (re-search-backward "\\S " (line-beginning-position) 'noerror)))
-             (paste (funcall org-rich-yank-format-paste
-                             org-rich-yank--lang
-                             escaped-kill
-                             (org-rich-yank--link))))
-        (when needs-initial-newline
-          (insert "\n"))
-        (insert
-         (if org-rich-yank-add-target-indent
-             (org-rich-yank-indent paste)
-           paste)))
-    (message "`org-rich-yank' doesn't know the source buffer – please `kill-ring-save' and try again.")))
+  (cond ((org-rich-yank--treat-as-image)
+         (org-download-clipboard))
+        ((and org-rich-yank--buffer
+              org-rich-yank--lang)
+         (let* ((escaped-kill (org-escape-code-in-string (current-kill 0)))
+                (needs-initial-newline
+                 (save-excursion
+                   (re-search-backward "\\S " (line-beginning-position) 'noerror)))
+                (paste (funcall org-rich-yank-format-paste
+                                org-rich-yank--lang
+                                escaped-kill
+                                (org-rich-yank--link))))
+           (when needs-initial-newline
+             (insert "\n"))
+           (insert
+            (if org-rich-yank-add-target-indent
+                (org-rich-yank-indent paste)
+              paste))))
+        (t
+         (message "`org-rich-yank' doesn't know the source buffer – please `kill-ring-save' and try again."))))
 
 
 (provide 'org-rich-yank)

@@ -53,6 +53,12 @@ message that you have to kill the selection again.
 
 * Configuration
 
+** Image support
+
+If you have =org-download= installed and you copy image contents,
+=org-rich-yank= will defer to =org-download-clipboard=. You can turn
+this feature off by setting =org-rich-yank-download-image= to =nil=.
+
 ** Changing the link/block format
 
 If you want to change how the source block or link is formatted, you
