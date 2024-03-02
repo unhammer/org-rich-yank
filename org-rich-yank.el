@@ -179,12 +179,10 @@ ARGS ignored."
 
 (defun org-rich-yank--format-paste-default (language contents link)
   "Format LANGUAGE, CONTENTS and LINK as an `org-mode' source block."
-  (setq pattern "#+BEGIN_SRC %s\n%s\n#+END_SRC\n")
-  (if link (setq pattern (concat pattern "%s")))
-  (format pattern
+  (format "#+BEGIN_SRC %s\n%s\n#+END_SRC\n%s"
           language
           (org-rich-yank--trim-nl contents)
-          link))
+          (or link "")))
 
 (defun org-rich-yank--treat-as-image ()
   "Non-nil if clipboard contents contain image, and `org-download' feature enabled."
