@@ -1,9 +1,9 @@
 ;;; org-rich-yank.el --- Paste with org-mode markup and link to source -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018-2023 Kevin Brubeck Unhammer
+;; Copyright (C) 2018-2025 Kevin Brubeck Unhammer
 
 ;; Author: Kevin Brubeck Unhammer <unhammer@fsfe.org>
-;; Version: 0.3.1
+;; Version: 0.3.2
 ;; URL: https://github.com/unhammer/org-rich-yank
 ;; Package-Requires: ((emacs "25.1"))
 ;; Keywords: convenience, hypermedia, org
@@ -85,6 +85,15 @@ See `org-rich-yank--format-paste-default' for example and expected arguments."
   :group 'org-rich-yank
   :type 'boolean)
 
+(defcustom org-rich-yank--clipboard-link-mime-types
+  '(text/x-moz-url-priv
+    chromium/x-source-url
+    application/x-openoffice-link\;windows_formatname=\"Link\"
+    text/uri-list)
+  "Mime types used by common programs to store link/url metadata in X CLIPBOARD."
+  :group 'org-rich-yank
+  :type '(repeat symbol))
+
 (defvar org-rich-yank--buffer nil
   "The buffer of the most recent `kill-ring' text.")
 
@@ -160,13 +169,33 @@ ARGS ignored."
                          (plist-get eww-data :url))))
             (t (org-store-link nil)))))
 
+(defun org-rich-yank--get-X-clipboard-link ()
+  "Search X gui CLIPBOARD selection for data with an url mime type.
+Common url mime types defined in `org-rich-yank--clipboard-link-mime-types'."
+  (when-let* ((data-types (gui-get-selection 'CLIPBOARD 'TARGETS))
+              (data-type (and (vectorp data-types)
+                              (seq-find
+                               (lambda (dt) (memq dt org-rich-yank--clipboard-link-mime-types))
+                               data-types)))
+              (data (gui-get-selection 'CLIPBOARD data-type))
+              (link-data (yank-media-types--format data-type data)))
+    ;; TODO: Customizable list of GUI link-cleaner functions:
+    (if (eq data-type 'application/x-openoffice-link\;windows_formatname=\"Link\")
+        (when-let ((path (nth 1 (split-string link-data "\0"))))
+          (format "[[file://%s]]" path))
+      link-data)))
+
 (defun org-rich-yank--link ()
   "Get an org-link to the current kill."
-  (with-current-buffer org-rich-yank--buffer
-    (let ((link (org-rich-yank--store-link)))
-      ;; TODO: make it (file-relative-name … dir-of-org-file) if
-      ;; they're in the same projectile-project
-      (when link (concat link "\n")))))
+  (or
+   (org-rich-yank--get-X-clipboard-link)
+   (with-current-buffer org-rich-yank--buffer
+     (let ((link (org-rich-yank--store-link)))
+       ;; TODO: make it (file-relative-name … dir-of-org-file) if
+       ;; they're in the same projectile-project
+       (when link (concat link "\n"))))
+   ;; Don't insert "nil" if no link found:
+   ""))
 
 (defun org-rich-yank-indent (paste)
   "Prepend current indentation to each line of PASTE."
@@ -182,7 +211,7 @@ ARGS ignored."
   (format "#+BEGIN_SRC %s\n%s\n#+END_SRC\n%s"
           language
           (org-rich-yank--trim-nl contents)
-          (or link "")))
+          link))
 
 (defun org-rich-yank--treat-as-image ()
   "Non-nil if clipboard contents contain image, and `org-download' feature enabled."
@@ -202,10 +231,11 @@ ARGS ignored."
                 (needs-initial-newline
                  (save-excursion
                    (re-search-backward "\\S " (line-beginning-position) 'noerror)))
+                (link (org-rich-yank--link))
                 (paste (funcall org-rich-yank-format-paste
                                 org-rich-yank--lang
                                 escaped-kill
-                                (org-rich-yank--link))))
+                                link)))
            (when needs-initial-newline
              (insert "\n"))
            (insert
