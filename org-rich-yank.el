@@ -179,6 +179,8 @@ Common url mime types defined in `org-rich-yank--clipboard-link-mime-types'."
                                data-types)))
               (data (gui-get-selection 'CLIPBOARD data-type))
               (link-data (yank-media-types--format data-type data)))
+    ;; TODO: if pandoc is installed, we could use the text/html target and do something like
+    ;; `xclip -o -selection clipboard -t text/html | pandoc -f html -t org`
     ;; TODO: Customizable list of GUI link-cleaner functions:
     (if (eq data-type 'application/x-openoffice-link\;windows_formatname=\"Link\")
         (when-let ((path (nth 1 (split-string link-data "\0"))))
