@@ -61,6 +61,7 @@
 (autoload 'org-element-type "org-element")
 (autoload 'org-element-property "org-element")
 (autoload 'org-download-clipboard "org-download")
+(autoload 'yank-media-types--format "yank-media") ; optional; appeared in emacs-29.0.90
 
 (defgroup org-rich-yank nil
   "Options for org-rich-yank."
@@ -178,7 +179,9 @@ Common url mime types defined in `org-rich-yank--clipboard-link-mime-types'."
                                (lambda (dt) (memq dt org-rich-yank--clipboard-link-mime-types))
                                data-types)))
               (data (gui-get-selection 'CLIPBOARD data-type))
-              (link-data (yank-media-types--format data-type data)))
+              ;; TODO: Can/should we use yank-media-preferred-types or yank-media-autoselect-function?
+              (link-data (and (fboundp 'yank-media-types--format)
+                              (yank-media-types--format data-type data))))
     ;; TODO: if pandoc is installed, we could use the text/html target and do something like
     ;; `xclip -o -selection clipboard -t text/html | pandoc -f html -t org`
     ;; TODO: Customizable list of GUI link-cleaner functions:
