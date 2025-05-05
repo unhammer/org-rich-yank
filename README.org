@@ -87,3 +87,9 @@ Configuring the variable as above results in the following content being pasted:
   ,#+END_SRC
   ,#+comment: [[file:~/src/org-rich-yank/org-rich-yank.el]]
 #+end_example
+
+* See also
+
+  - [[https://github.com/jkitchin/ox-clip][ox-clip]] solves the other direction, it gives you a command for
+    *copying* your org-mode as rich text (or any source code, using
+    htmlize.el), letting you paste into non-Emacs rich text editors
