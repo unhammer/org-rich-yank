@@ -105,6 +105,8 @@ Often but not always the language of buffer major mode; see
 
 If nil, the default formatter uses #+begin_quote instead of #+begin_src.")
 
+(defvar treesit-major-mode-remap-alist)
+
 (defun org-rich-yank--get-lang ()
   "Find source language of current kill.
 Typically language of buffer major mode, but org source blocks
@@ -117,7 +119,12 @@ should for example use the mode of their block, instead of
             (lang (and (eq type 'src-block)
                        (org-element-property :language element))))
       lang
-    (replace-regexp-in-string "-mode$" "" (symbol-name major-mode))))
+    (replace-regexp-in-string "-mode$" "" (symbol-name (alist-get major-mode
+                                                                  (and (boundp 'treesit-major-mode-remap-alist)
+                                                                       (mapcar (pcase-lambda (`(,vanilla . ,with-ts))
+                                                                                 (cons with-ts vanilla))
+                                                                               treesit-major-mode-remap-alist))
+                                                                  major-mode)))))
 
 (defun org-rich-yank--store (&rest _args)
   "Store current buffer in `org-rich-yank--buffer'.
