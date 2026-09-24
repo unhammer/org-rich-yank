@@ -1,9 +1,9 @@
 ;;; org-rich-yank.el --- Paste with org-mode markup and link to source -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018-2025 Kevin Brubeck Unhammer
+;; Copyright (C) 2018-2026 Kevin Brubeck Unhammer
 
 ;; Author: Kevin Brubeck Unhammer <unhammer@fsfe.org>
-;; Version: 0.3.2
+;; Version: 0.4.0
 ;; URL: https://github.com/unhammer/org-rich-yank
 ;; Package-Requires: ((emacs "25.1"))
 ;; Keywords: convenience, hypermedia, org
@@ -51,6 +51,12 @@
 ;;; Note that we eagerly load `org-rich-yank', so we can capture yanks
 ;;; that happen before `org' is loaded.
 
+;;; This package can also store links coming from outside,
+;;; e.g. Firefox or LibreOffice.  Note that if you modify
+;;; `interprogram-paste-function', you have to enable `org-rich-yank'
+;;; *after* doing so (or at least call `org-rich-yank-enable' again
+;;; after modifying `interprogram-paste-function').
+
 
 ;;; Code:
 
@@ -64,7 +70,7 @@
 (autoload 'yank-media-types--format "yank-media") ; optional; appeared in emacs-29.0.90
 
 (defgroup org-rich-yank nil
-  "Options for org-rich-yank."
+  "Options for `org-rich-yank'."
   :tag "org-rich-yank"
   :group 'org)
 
@@ -78,6 +84,14 @@ all lines below will also get that indentation."
 (defcustom org-rich-yank-format-paste #'org-rich-yank--format-paste-default
   "A function to format current paste as an org source block.
 See `org-rich-yank--format-paste-default' for example and expected arguments."
+  :group 'org-rich-yank
+  :type 'function)
+
+(defcustom org-rich-yank-guess-interprogram-lang #'org-rich-yank--guess-interprogram-lang
+  "A function to guess the language of a paste if from outside this Emacs.
+Takes a single argument, the current paste.  Should return either a
+string with the language to use in the org src block, or nil to treat
+the paste as a quote instead of src."
   :group 'org-rich-yank
   :type 'function)
 
@@ -95,21 +109,12 @@ See `org-rich-yank--format-paste-default' for example and expected arguments."
   :group 'org-rich-yank
   :type '(repeat symbol))
 
-(defvar org-rich-yank--buffer nil
-  "The buffer of the most recent `kill-ring' text.")
-
-(defvar org-rich-yank--lang nil
-  "Language of the most recent `kill-ring' text.
-Often but not always the language of buffer major mode; see
-`org-rich-yank--get-lang'.
-
-If nil, the default formatter uses #+begin_quote instead of #+begin_src.")
-
 (defun org-rich-yank--get-lang ()
   "Find source language of current kill.
 Typically language of buffer major mode, but org source blocks
 should for example use the mode of their block, instead of
 \"org\"."
+  ;; Needs to be done when copying, not when pasting, since we look for org src block language
   (if-let* ((element (and (eq major-mode 'org-mode)
                           (org-element-at-point)))
             (type (and (org-src--on-datum-p element) ; o/w takes effect after #+end_src too
@@ -119,15 +124,53 @@ should for example use the mode of their block, instead of
       lang
     (replace-regexp-in-string "-mode$" "" (symbol-name major-mode))))
 
+(defun org-rich-yank--guess-interprogram-lang (string)
+  "Ignores STRING and returns nil (treat as quote instead of src).
+Used as default for `org-rich-yank-guess-interprogram-lang'."
+  nil)
+
 (defun org-rich-yank--store (&rest _args)
-  "Store current buffer in `org-rich-yank--buffer'.
-ARGS ignored."
-  (setq org-rich-yank--buffer (current-buffer))
-  (setq org-rich-yank--lang (org-rich-yank--get-lang)))
+  "Store metadata on head of `kill-ring'.
+
+Current buffer is stored in `org-rich-yank-buffer', major mode in
+`org-rich-yank-lang'.
+
+Stores nothing on it if it already has data (e.g. from
+`org-rich-yank--wrap-interprogram-paste')."
+  (when-let* ((head (and kill-ring
+                         (stringp (car kill-ring))
+                         (car kill-ring))))
+    ;; Only if no existing origin property:
+    (unless (get-text-property 0 'org-rich-yank-origin head)
+      (add-text-properties
+       0 (length head)
+       (list 'org-rich-yank-origin 'this-emacs
+             'org-rich-yank-buffer (current-buffer) ; if from this emacs, store buffer
+             'org-rich-yank-lang (org-rich-yank--get-lang))
+       head))))
+
+
+(defun org-rich-yank--wrap-interprogram-paste (orig-fun)
+  "Store that the current paste has interprogram origin.
+Used as advice where ORIG-FUN is `interprogram-paste-function'."
+  (when-let* ((res (funcall orig-fun))
+              (strings (if (listp res)
+                           res
+                         (list res))))
+    (mapcar (lambda (string)
+              (add-text-properties 0
+                                   (length string)
+                                   (list 'org-rich-yank-origin 'interprogram
+                                         'org-rich-yank-lang (funcall org-rich-yank-guess-interprogram-lang string)
+                                         'org-rich-yank-link (org-rich-yank--get-X-clipboard-link))
+                                   string)
+              string)
+            strings)))
 
 ;;;###autoload
 (defun org-rich-yank-enable ()
   "Add the advices that store the buffer of the current kill."
+  (advice-add interprogram-paste-function :around #'org-rich-yank--wrap-interprogram-paste)
   (advice-add #'kill-append :after #'org-rich-yank--store)
   (advice-add #'kill-new :after #'org-rich-yank--store))
 
@@ -136,6 +179,7 @@ ARGS ignored."
 
 (defun org-rich-yank-disable ()
   "Remove the advices that store the buffer of the current kill."
+  (advice-remove interprogram-paste-function #'org-rich-yank--wrap-interprogram-paste)
   (advice-remove #'kill-append #'org-rich-yank--store)
   (advice-remove #'kill-new #'org-rich-yank--store))
 
@@ -150,6 +194,8 @@ ARGS ignored."
 
 (defun org-rich-yank--store-link ()
   "Store the link using `org-store-link' without erroring out."
+  ;; TODO: make it (file-relative-name … dir-of-org-file) if they're
+  ;; in the same project
   (with-demoted-errors "Error in org-rich-yank--store-link: %S"
       (cond ((and (eq major-mode 'gnus-article-mode)
                   (fboundp #'gnus-article-show-summary))
@@ -176,7 +222,7 @@ ARGS ignored."
   "Search X gui CLIPBOARD selection for data with an url mime type.
 Common url mime types defined in `org-rich-yank--clipboard-link-mime-types'.
 
-If found, sets org-rich-yank--lang to nil, for quote formatting."
+If found, sets `org-rich-yank--lang' to nil, for quote formatting."
   (when-let* ((data-types (gui-get-selection 'CLIPBOARD 'TARGETS))
               (data-type (and (vectorp data-types)
                               (seq-find
@@ -189,20 +235,19 @@ If found, sets org-rich-yank--lang to nil, for quote formatting."
                                   (when-let* ((path (nth 1 (split-string link-data "\0"))))
                                     (format "[[file://%s]]" path))
                                 link-data)))
-    (setq org-rich-yank--lang nil) ; TODO: could run lang-detect in case it's code?
-    (setq org-rich-yank--buffer nil)
     formatted-link))
 
-(defun org-rich-yank--link ()
-  "Get an org-link to the current kill."
+(defun org-rich-yank--link (kill)
+  "Get an org-link to KILL."
   (or
-   (org-rich-yank--get-X-clipboard-link)
-   (when org-rich-yank--buffer
-     (with-current-buffer org-rich-yank--buffer
-       (let ((link (org-rich-yank--store-link)))
-         ;; TODO: make it (file-relative-name … dir-of-org-file) if
-         ;; they're in the same projectile-project
-         (when link
+   ;; If this emacs instance has recorded a link, prefer that:
+   (when-let* ((link (get-text-property 0 'org-rich-yank-link kill)))
+     (concat link "\n"))
+   ;; If we have a buffer, use org-mode to store a link and use that:
+   (when-let* ((buffer (get-text-property 0 'org-rich-yank-buffer kill)))
+     (when (buffer-live-p buffer)
+       (with-current-buffer buffer
+         (when-let* ((link (org-rich-yank--store-link)))
            (concat link "\n")))))
    ;; Don't insert "nil" if no link found:
    ""))
@@ -240,13 +285,15 @@ If found, sets org-rich-yank--lang to nil, for quote formatting."
   (interactive)
   (if (org-rich-yank--treat-as-image)
       (org-download-clipboard)
-    (let* ((escaped-kill (org-escape-code-in-string (current-kill 0)))
+    (let* ((raw-kill (current-kill 0 t))
+           (link (org-rich-yank--link raw-kill))
+           (lang (get-text-property 0 'org-rich-yank-lang raw-kill))
+           (escaped-kill (org-escape-code-in-string raw-kill))
            (needs-initial-newline
             (save-excursion
               (re-search-backward "\\S " (line-beginning-position) 'noerror)))
-           (link (org-rich-yank--link))
            (paste (funcall org-rich-yank-format-paste
-                           org-rich-yank--lang
+                           lang
                            escaped-kill
                            link)))
       (when needs-initial-newline

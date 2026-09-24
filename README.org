@@ -51,6 +51,22 @@ kills. You can remove the =:demand t= and have lazy/deferred loading,
 but then the first time you hit =C-M-y= after startup, you'll get a
 message that you have to kill the selection again.
 
+** Interactions with =interprogram-paste-function=
+
+If you modify =interprogram-paste-function=, you should to enable
+=org-rich-yank= *after* doing so, or at least call
+=org-rich-yank-enable= again after modifying
+=interprogram-paste-function=, e.g.
+
+#+begin_src emacs-lisp
+  (setq interprogram-paste-function #'my-gui-paste-function)
+  (require 'org-rich-yank)
+  (org-rich-yank-enable)
+#+end_src
+
+This ensures you get support for links from Firefox and LibreOffice,
+and avoids spurious links when pasting from other programs.
+
 * Configuration
 
 ** Image support
