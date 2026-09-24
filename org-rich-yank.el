@@ -88,7 +88,7 @@ See `org-rich-yank--format-paste-default' for example and expected arguments."
   :type 'function)
 
 (defcustom org-rich-yank-guess-interprogram-lang #'org-rich-yank--guess-interprogram-lang
-  "A function to guess the language of a paste if from outside this Emacs.
+  "A function to guess the language of a paste if from outside Emacs.
 Takes a single argument, the current paste.  Should return either a
 string with the language to use in the org src block, or nil to treat
 the paste as a quote instead of src."
@@ -110,7 +110,7 @@ the paste as a quote instead of src."
   :type '(repeat symbol))
 
 (defun org-rich-yank--get-lang ()
-  "Find source language of current kill.
+  "Find source language at point.
 Typically language of buffer major mode, but org source blocks
 should for example use the mode of their block, instead of
 \"org\"."
@@ -161,15 +161,22 @@ Used as advice where ORIG-FUN is `interprogram-paste-function'."
               (add-text-properties 0
                                    (length string)
                                    (list 'org-rich-yank-origin 'interprogram
-                                         'org-rich-yank-lang (funcall org-rich-yank-guess-interprogram-lang string)
+                                         'org-rich-yank-lang (or (org-rich-yank--get-X-major-mode)
+                                                                 (funcall org-rich-yank-guess-interprogram-lang string))
                                          'org-rich-yank-link (org-rich-yank--get-X-clipboard-link))
                                    string)
               string)
             strings)))
 
+(defun org-rich-yank--xselect-major-mode (&rest ignored)
+  "Just return the major-mode as string."
+  (org-rich-yank--get-lang))
+
 ;;;###autoload
 (defun org-rich-yank-enable ()
   "Add the advices that store the buffer of the current kill."
+  (add-to-list 'selection-converter-alist
+               (cons 'EMACS_ORG_RICH_YANK_LANG #'org-rich-yank--xselect-major-mode))
   (advice-add interprogram-paste-function :around #'org-rich-yank--wrap-interprogram-paste)
   (advice-add #'kill-append :after #'org-rich-yank--store)
   (advice-add #'kill-new :after #'org-rich-yank--store))
@@ -179,6 +186,9 @@ Used as advice where ORIG-FUN is `interprogram-paste-function'."
 
 (defun org-rich-yank-disable ()
   "Remove the advices that store the buffer of the current kill."
+  (setq selection-converter-alist
+        (seq-remove (lambda (pair) (eq (car pair) 'EMACS_ORG_RICH_YANK_LANG))
+                    selection-converter-alist))
   (advice-remove interprogram-paste-function #'org-rich-yank--wrap-interprogram-paste)
   (advice-remove #'kill-append #'org-rich-yank--store)
   (advice-remove #'kill-new #'org-rich-yank--store))
@@ -236,6 +246,11 @@ If found, sets `org-rich-yank--lang' to nil, for quote formatting."
                                     (format "[[file://%s]]" path))
                                 link-data)))
     formatted-link))
+
+(defun org-rich-yank--get-X-major-mode ()
+  "Search X gui CLIPBOARD selection for major mode stored by org-rich-yank.
+Useful in case of copy-pasting between different Emacs instances."
+  (gui-get-selection 'CLIPBOARD 'EMACS_ORG_RICH_YANK_LANG))
 
 (defun org-rich-yank--link (kill)
   "Get an org-link to KILL."
