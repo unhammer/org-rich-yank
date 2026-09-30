@@ -230,9 +230,7 @@ Used as advice where ORIG-FUN is `interprogram-paste-function'."
 
 (defun org-rich-yank--get-X-clipboard-link ()
   "Search X gui CLIPBOARD selection for data with an url mime type.
-Common url mime types defined in `org-rich-yank--clipboard-link-mime-types'.
-
-If found, sets `org-rich-yank--lang' to nil, for quote formatting."
+Common url mime types defined in `org-rich-yank--clipboard-link-mime-types'."
   (when-let* ((data-types (gui-get-selection 'CLIPBOARD 'TARGETS))
               (data-type (and (vectorp data-types)
                               (seq-find
