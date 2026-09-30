@@ -101,7 +101,7 @@ the paste as a quote instead of src."
   :type 'boolean)
 
 (defcustom org-rich-yank--clipboard-link-mime-types
-  '(text/x-moz-url-priv
+  '(text/x-moz-url-priv ; but the latest update nerfed it because security: https://github.com/w3c/clipboard-apis/issues/244#issuecomment-5693406824
     chromium/x-source-url
     application/x-openoffice-link\;windows_formatname=\"Link\"
     text/uri-list)
@@ -150,6 +150,8 @@ Stores nothing on it if it already has data (e.g. from
        head))))
 
 
+;; TODO: check if we can use (x-selection-owner-p 'CLIPBOARD)
+;; instead of wrapping interprogram-paste-function
 (defun org-rich-yank--wrap-interprogram-paste (orig-fun)
   "Store that the current paste has interprogram origin.
 Used as advice where ORIG-FUN is `interprogram-paste-function'."
